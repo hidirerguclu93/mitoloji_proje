@@ -27,6 +27,7 @@ flutter:
     - assets/egypt_texture.jpg
     - assets/  # Tekrardan yazmıyorum, yukarıdakilere ekleme yapıldı!
     - assets/fonts/
+    - assets/icons/
 
   fonts:
     - family: NotoEmoji

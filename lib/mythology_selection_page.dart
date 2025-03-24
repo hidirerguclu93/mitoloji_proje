@@ -2,75 +2,96 @@ import 'package:flutter/material.dart';
 import 'story_list_page.dart';
 
 class MythologySelectionPage extends StatelessWidget {
-  const MythologySelectionPage({Key? key}) : super(key: key);
+  const MythologySelectionPage({super.key});
 
   final List<Map<String, dynamic>> mythologies = const [
-    {"name": "Yunan", "icon": "⚡", "color": Colors.blue},
-    {"name": "Mısır", "icon": "☀️", "color": Colors.orange},
-    {"name": "Norse", "icon": "🌲", "color": Colors.green},
-    {"name": "Hint", "icon": "🕉️", "color": Colors.red},
+    {"name": "Yunan", "image": "assets/icons/zeus.png"},
+    {"name": "Mısır", "image": "assets/icons/eye-of-horus.png"},
+    {"name": "İskandinav", "image": "assets/icons/odin.png"},
+    {"name": "Türk", "image": "assets/icons/wolf.png"},
+    {"name": "Japon", "image": "assets/icons/amaterasu.png"},
+    {"name": "Hint", "image": "assets/icons/ganesha.png"},
+    {"name": "Çin", "image": "assets/icons/chinese.png"},
+    {"name": "Aztek", "image": "assets/icons/aztek.png"},
+    {"name": "Yerli", "image": "assets/icons/eagle.png"},
+    {"name": "Slav", "image": "assets/icons/slav_bear.png"},
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Mitoloji Seç")),
-      body: Center(
-        child: Wrap(
-          spacing: 20,
-          runSpacing: 20,
-          alignment: WrapAlignment.center, // Baloncukları ortala
-          children: mythologies.map((mythology) {
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StoryListPage(mitoloji: mythology["name"] as String),
-                  ),
-                );
-              },
-              child: BubbleWidget(
-                text: mythology["icon"] as String,
-                color: mythology["color"] as Color,
-              ),
-            );
-          }).toList(),
-        ),
+      appBar: AppBar(
+        title: const Text("Mitolojini Seç"),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.black,
       ),
-    );
-  }
-}
-
-class BubbleWidget extends StatelessWidget {
-  final String text;
-  final Color color;
-
-  const BubbleWidget({Key? key, required this.text, required this.color}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 80, // Sabit genişlik
-      height: 80, // Sabit yükseklik (tam daire)
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 6,
-            spreadRadius: 2,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/bg_texture.webp"),
+            fit: BoxFit.cover,
           ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+        ),
+        child: Center(
+          child: Container(
+            width: 350,
+            height: 400, // dilersen artırabilirsin
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(
+                16,
+              ), // daha keskin istersen 0 yaparız
+              border: Border.all(
+                color: Colors.white.withOpacity(0.4),
+                width: 2,
+              ),
+            ),
+
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 16,
+                runSpacing: 16,
+                children:
+                    mythologies.map((myth) {
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) =>
+                                      StoryListPage(mitoloji: myth["name"]),
+                            ),
+                          );
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundColor: Colors.white,
+                              backgroundImage: AssetImage(
+                                myth["image"] as String,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              myth["name"] as String,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+              ),
+            ),
           ),
         ),
       ),

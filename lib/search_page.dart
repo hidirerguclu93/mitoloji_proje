@@ -5,7 +5,7 @@ class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
 
   @override
-  _SearchPageState createState() => _SearchPageState();
+  State<SearchPage> createState() => _SearchPageState();
 }
 
 class _SearchPageState extends State<SearchPage> {
@@ -14,14 +14,11 @@ class _SearchPageState extends State<SearchPage> {
   List<Map<String, dynamic>> _searchResults = [];
   bool _isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
   void _searchStories(String query) async {
     query = query.trim();
-    if (query.isEmpty) {
+
+    if (query.length < 3) {
+      // 3 harften azsa sonucu temizle
       setState(() {
         _searchResults = [];
       });
@@ -36,13 +33,13 @@ class _SearchPageState extends State<SearchPage> {
       final response = await supabase
           .from('mythology_stories')
           .select()
-          .ilike('title', '%$query%'); // Başlık içinde geçenleri arar
+          .ilike('title', '%$query%'); // İçeren başlıkları getir
 
       setState(() {
         _searchResults = List<Map<String, dynamic>>.from(response);
       });
     } catch (error) {
-      print("Hata oluştu: $error");
+      debugPrint("Hata oluştu: $error");
     } finally {
       setState(() {
         _isLoading = false;
@@ -51,50 +48,57 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Hikaye Arama")),
+      appBar: AppBar(title: const Text("Hikaye Arama")),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: "Hikaye Ara",
+                labelText: "En az 3 harf yazın...",
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.search),
-                suffixIcon:
-                    _searchController.text.isNotEmpty
-                        ? IconButton(
-                          icon: Icon(Icons.clear),
-                          onPressed: () {
-                            setState(() {
-                              _searchController.clear();
-                              _searchResults = [];
-                            });
-                          },
-                        )
-                        : null,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _searchResults = [];
+                          });
+                        },
+                      )
+                    : null,
               ),
               onChanged: _searchStories,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             _isLoading
-                ? CircularProgressIndicator()
+                ? const CircularProgressIndicator()
                 : Expanded(
-                  child:
-                      _searchResults.isEmpty
-                          ? Center(child: Text("Sonuç bulunamadı"))
-                          : ListView.builder(
+                    child: _searchResults.isEmpty
+                        ? const Center(child: Text("Sonuç bulunamadı"))
+                        : ListView.builder(
                             itemCount: _searchResults.length,
                             itemBuilder: (context, index) {
                               final story = _searchResults[index];
                               return Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                 child: ListTile(
-                                  title: Text(story['title']),
+                                  title: Text(story['title'] ?? "Başlık yok"),
                                   subtitle: Text(
-                                    story['content'],
+                                    story['content'] ?? "",
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -102,9 +106,8 @@ class _SearchPageState extends State<SearchPage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder:
-                                            (context) =>
-                                                StoryDetailPage(story: story),
+                                        builder: (context) =>
+                                            StoryDetailPage(story: story),
                                       ),
                                     );
                                   },
@@ -112,7 +115,7 @@ class _SearchPageState extends State<SearchPage> {
                               );
                             },
                           ),
-                ),
+                  ),
           ],
         ),
       ),
@@ -128,11 +131,11 @@ class StoryDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(story['title'])),
+      appBar: AppBar(title: Text(story['title'] ?? "Detay")),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
-          child: Text(story['content'], style: TextStyle(fontSize: 18)),
+          child: Text(story['content'] ?? "", style: const TextStyle(fontSize: 18)),
         ),
       ),
     );
