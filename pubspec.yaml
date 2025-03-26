@@ -22,7 +22,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/olympus_background.jpg
+    - assets/olympus_background.webp
     - assets/greek_texture.jpg
     - assets/egypt_texture.jpg
     - assets/  # Tekrardan yazmıyorum, yukarıdakilere ekleme yapıldı!

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'story_list_page.dart';
+import 'story_list_page.dart'; // Add this import statement
 
 class MythologySelectionPage extends StatelessWidget {
   const MythologySelectionPage({super.key});
@@ -36,18 +36,19 @@ class MythologySelectionPage extends StatelessWidget {
         child: Center(
           child: Container(
             width: 350,
-            height: 400, // dilersen artırabilirsin
+            height: 400,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(
-                16,
-              ), // daha keskin istersen 0 yaparız
+              color: Colors.white.withAlpha(
+                (0.2 * 255).toInt(),
+              ), // Uyarı giderildi
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withOpacity(0.4),
+                color: Colors.white.withAlpha(
+                  (0.4 * 255).toInt(),
+                ), // Uyarı giderildi
                 width: 2,
               ),
             ),
-
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Wrap(

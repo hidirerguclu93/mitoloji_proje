@@ -4,14 +4,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'search_page.dart';
 import 'map_screen.dart';
 import 'chat_page.dart';
-import 'mythology_selection_page.dart'; // Sakız makinesi 
+import 'mythology_selection_page.dart';
+import 'login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
     url: 'https://hwsfigyagjtorzvbdqrp.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3c2ZpZ3lhZ2p0b3J6dmJkcXJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMDc5NTUsImV4cCI6MjA1Nzg4Mzk1NX0.mJhO-InFZddtsX_iGV1vIv4fYHBkRs9easkwrc4c5K4',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3c2ZpZ3lhZ2p0b3J6dmJkcXJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMDc5NTUsImV4cCI6MjA1Nzg4Mzk1NX0.mJhO-InFZddtsX_iGV1vIv4fYHBkRs9easkwrc4c5K4',
   );
 
   runApp(const MyApp());
@@ -29,99 +31,124 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int selectedIndex = 0;
+
+  final List<IconData> icons = [Icons.home, Icons.book, Icons.map];
+  final List<String> labels = ["Ana Sayfa", "Hikayeler", "Harita"];
+
+  void handleTap(int index) {
+    setState(() => selectedIndex = index);
+
+    if (index == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MythologySelectionPage()),
+      );
+    } else if (index == 2) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MapScreen()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const CustomDrawer(),
-      appBar: AppBar(
-        backgroundColor: Colors.black.withAlpha((0.7 * 255).toInt()), // .withOpacity yerine
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ),
-      ),
       body: Stack(
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/olympus_background.jpg',
+              'assets/olympus_background.webp',
               fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            top: 40,
+            left: 16,
+            child: Builder(
+              builder:
+                  (context) => Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withAlpha((0.4 * 255).toInt()),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.menu, color: Colors.white),
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                    ),
+                  ),
             ),
           ),
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              height: 100,
+              height: 80,
               decoration: BoxDecoration(
                 color: Colors.black.withAlpha((0.7 * 255).toInt()),
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(80),
-                  topRight: Radius.circular(80),
+                  topLeft: Radius.circular(50),
+                  topRight: Radius.circular(50),
                 ),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  MenuButton(
-                    icon: Icons.home,
-                    label: "Ana Sayfa",
-                    onTap: () {},
-                  ),
-                  MenuButton(
-                    icon: Icons.book,
-                    label: "Hikayeler",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MythologySelectionPage(),
+                children: List.generate(icons.length, (index) {
+                  final isSelected = index == selectedIndex;
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => handleTap(index),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutBack,
+                        transform: Matrix4.translationValues(
+                          0,
+                          isSelected ? -8 : 0,
+                          0,
                         ),
-                      );
-                    },
-                  ),
-                  MenuButton(
-                    icon: Icons.map,
-                    label: "Harita",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const MapScreen()),
-                      );
-                    },
-                  ),
-                ],
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              icons[index],
+                              size: 42,
+                              color:
+                                  isSelected
+                                      ? Colors.lightBlueAccent
+                                      : Colors.white,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              labels[index],
+                              style: TextStyle(
+                                color:
+                                    isSelected
+                                        ? Colors.lightBlueAccent
+                                        : Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class MenuButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const MenuButton({super.key, required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 30),
-          Text(label, style: const TextStyle(color: Colors.white)),
         ],
       ),
     );
@@ -138,7 +165,7 @@ class CustomDrawer extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: [
           const DrawerHeader(
-            decoration: BoxDecoration(color: Colors.black),
+            decoration: BoxDecoration(color: Colors.black87),
             child: Text(
               "Menü",
               style: TextStyle(color: Colors.white, fontSize: 24),
@@ -150,7 +177,7 @@ class CustomDrawer extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SearchPage()),
+                MaterialPageRoute(builder: (_) => const SearchPage()),
               );
             },
           ),
@@ -160,14 +187,19 @@ class CustomDrawer extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ChatPage()),
+                MaterialPageRoute(builder: (_) => const ChatPage()),
               );
             },
           ),
           ListTile(
             leading: const Icon(Icons.login),
             title: const Text("Giriş Yap"),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.settings),

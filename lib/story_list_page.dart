@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'story_detail_page.dart';
 
 class StoryListPage extends StatefulWidget {
   final String mitoloji;
-
   const StoryListPage({super.key, required this.mitoloji});
 
   @override
@@ -11,9 +11,8 @@ class StoryListPage extends StatefulWidget {
 }
 
 class _StoryListPageState extends State<StoryListPage> {
-  final SupabaseClient supabase = Supabase.instance.client;
-  List<Map<String, dynamic>> stories = [];
   bool _isLoading = false;
+  List<Map<String, dynamic>> stories = [];
 
   @override
   void initState() {
@@ -23,146 +22,119 @@ class _StoryListPageState extends State<StoryListPage> {
 
   Future<void> fetchStories() async {
     setState(() => _isLoading = true);
-
     try {
-      final response = await supabase
+      final response = await Supabase.instance.client
           .from('mythology_stories')
           .select()
           .eq('category', widget.mitoloji);
 
-      setState(() {
-        stories = List<Map<String, dynamic>>.from(response);
-      });
-
-      if (stories.isEmpty && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Bu mitoloji için henüz hikaye yok!"),
-            duration: Duration(seconds: 2),
-          ),
-        );
+      if (mounted) {
+        setState(() => stories = List<Map<String, dynamic>>.from(response));
       }
-    } catch (error) {
-      debugPrint("Hata oluştu: $error");
-      if (context.mounted) {
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Hikayeler yüklenirken bir hata oluştu."),
+            content: Text("Hikayeler yüklenirken hata oluştu."),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("${widget.mitoloji} Mitolojisi")),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : stories.isEmpty
+      appBar: AppBar(
+        title: Text("${widget.mitoloji} Mitolojisi"),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.black,
+      ),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : stories.isEmpty
               ? const Center(
-                  child: Text(
-                    "Henüz hiç hikaye yok!",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                )
-              : ListView.builder(
-                  itemCount: stories.length,
-                  itemBuilder: (context, index) {
-                    final story = stories[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      elevation: 4,
-                      color: Colors.white.withOpacity(0.9),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        title: Text(
-                          story['title'] ?? "Başlık Yok",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 5),
-                          child: Text(
-                            story['content'] ?? "İçerik Yok",
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                          ),
-                        ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => StoryDetailPage(story: story),
+                child: Text(
+                  "Bu mitolojiye ait hikaye bulunamadı.",
+                  style: TextStyle(fontSize: 16),
+                ),
+              )
+              : Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 20,
+                    children:
+                        stories.map((story) {
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => StoryDetailPage(story: story),
+                                ),
+                              );
+                            },
+                            child: SizedBox(
+                              width: 140,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    height: 180,
+                                    width: 140,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      image:
+                                          story['image_url'] != null &&
+                                                  story['image_url']
+                                                      .toString()
+                                                      .isNotEmpty
+                                              ? DecorationImage(
+                                                image: NetworkImage(
+                                                  story['image_url'],
+                                                ),
+                                                fit: BoxFit.cover,
+                                              )
+                                              : const DecorationImage(
+                                                image: AssetImage(
+                                                  'assets/default_cover.jpg',
+                                                ),
+                                                fit: BoxFit.cover,
+                                              ),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: Colors.black26,
+                                          blurRadius: 6,
+                                          offset: Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    story['title'] ?? "Başlık Yok",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
                           );
-                        },
-                      ),
-                    );
-                  },
+                        }).toList(),
+                  ),
                 ),
-    );
-  }
-}
-
-class StoryDetailPage extends StatelessWidget {
-  final Map<String, dynamic> story;
-
-  const StoryDetailPage({super.key, required this.story});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Icon(Icons.book, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                story['title'] ?? "Detay",
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              story['title'] ?? "",
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueAccent,
-              ),
-            ),
-            const SizedBox(height: 10),
-            const Divider(color: Colors.black),
-            const SizedBox(height: 10),
-            Text(
-              story['content'] ?? "",
-              style: const TextStyle(fontSize: 18, height: 1.5),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
