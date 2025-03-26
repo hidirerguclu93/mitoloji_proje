@@ -24,7 +24,8 @@ flutter:
   assets:
     - assets/olympus_background.webp
     - assets/greek_texture.jpg
-    - assets/egypt_texture.jpg
+    - assets/egypttexture.webp
+    
     - assets/  # Tekrardan yazmıyorum, yukarıdakilere ekleme yapıldı!
     - assets/fonts/
     - assets/icons/
