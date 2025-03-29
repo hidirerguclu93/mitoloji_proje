@@ -4,7 +4,9 @@ import 'story_detail_page.dart';
 
 class StoryListPage extends StatefulWidget {
   final String mitoloji;
-  const StoryListPage({super.key, required this.mitoloji});
+  final String type;
+
+  const StoryListPage({super.key, required this.mitoloji, required this.type});
 
   @override
   State<StoryListPage> createState() => _StoryListPageState();
@@ -26,7 +28,8 @@ class _StoryListPageState extends State<StoryListPage> {
       final response = await Supabase.instance.client
           .from('mythology_stories')
           .select()
-          .eq('category', widget.mitoloji);
+          .eq('category', widget.mitoloji)
+          .eq('type', widget.type);
 
       if (mounted) {
         setState(() => stories = List<Map<String, dynamic>>.from(response));
@@ -49,18 +52,21 @@ class _StoryListPageState extends State<StoryListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("${widget.mitoloji} Mitolojisi"),
+        title: Text(
+          '${widget.mitoloji} Mitolojisi - ${widget.type == 'character' ? 'Karakterler' : 'Hikâyeler'}',
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,
       ),
+
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : stories.isEmpty
               ? const Center(
                 child: Text(
-                  "Bu mitolojiye ait hikaye bulunamadı.",
+                  "Bu mitolojiye ait içerik bulunamadı.",
                   style: TextStyle(fontSize: 16),
                 ),
               )

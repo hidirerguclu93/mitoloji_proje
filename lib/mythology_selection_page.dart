@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'story_list_page.dart'; // Add this import statement
+import 'mythology_category_page.dart'; // Kategori seçim sayfası için import
 
 class MythologySelectionPage extends StatelessWidget {
   const MythologySelectionPage({super.key});
@@ -38,14 +38,10 @@ class MythologySelectionPage extends StatelessWidget {
             width: 350,
             height: 400,
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(
-                (0.2 * 255).toInt(),
-              ), // Uyarı giderildi
+              color: Colors.white.withAlpha((0.2 * 255).toInt()),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withAlpha(
-                  (0.4 * 255).toInt(),
-                ), // Uyarı giderildi
+                color: Colors.white.withAlpha((0.4 * 255).toInt()),
                 width: 2,
               ),
             ),
@@ -55,42 +51,41 @@ class MythologySelectionPage extends StatelessWidget {
                 alignment: WrapAlignment.center,
                 spacing: 16,
                 runSpacing: 16,
-                children:
-                    mythologies.map((myth) {
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) =>
-                                      StoryListPage(mitoloji: myth["name"]),
-                            ),
-                          );
-                        },
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircleAvatar(
-                              radius: 30,
-                              backgroundColor: Colors.white,
-                              backgroundImage: AssetImage(
-                                myth["image"] as String,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              myth["name"] as String,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
+                children: mythologies.map((myth) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MythologyCategoryPage(
+                            selectedMythology: myth["name"],
+                          ),
                         ),
                       );
-                    }).toList(),
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: Colors.white,
+                          backgroundImage: AssetImage(
+                            myth["image"] as String,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          myth["name"] as String,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
             ),
           ),

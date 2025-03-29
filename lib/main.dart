@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+// Removed unused import
 import 'search_page.dart';
 import 'map_screen.dart';
 import 'chat_page.dart';
