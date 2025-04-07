@@ -34,7 +34,6 @@ Aetherium, mitolojik bilgileri ve karakterleri bir araya getiren, kullanıcılar
    ```dart
    await Supabase.initialize(
      url: 'https://projeurl.supabase.co',
-   ```
      anonKey: 'your-anon-key',
    );
    ```
