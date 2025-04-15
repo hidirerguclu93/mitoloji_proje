@@ -1,6 +1,6 @@
 name: mitoloji_proje
 description: "A new Flutter project."
-publish_to: 'none' 
+publish_to: 'none' # Sadece özel kullanım için
 
 version: 1.0.0+1
 
@@ -25,8 +25,9 @@ flutter:
     - assets/olympus_background.webp
     - assets/greek_texture.jpg
     - assets/egypttexture.webp
-    
-    - assets/  # Tekrardan yazmıyorum, yukarıdakilere ekleme yapıldı!
+    - assets/history_banner.webp
+    - assets/god_banner.webp
+    - assets/bg_texture.webp
     - assets/fonts/
     - assets/icons/
 
@@ -34,4 +35,3 @@ flutter:
     - family: NotoEmoji
       fonts:
         - asset: assets/fonts/NotoEmoji-Regular.ttf
-

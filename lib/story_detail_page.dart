@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StoryDetailPage extends StatefulWidget {
   final Map<String, dynamic> story;
@@ -13,6 +14,8 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
   late List<String> pages;
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool isLiked = false;
+  int likeCount = 0;
 
   @override
   void initState() {
@@ -21,6 +24,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
       widget.story['content'] ?? "",
       maxLength: 900,
     );
+    _loadLikeStatus();
   }
 
   List<String> splitContentIntoPages(String content, {int maxLength = 1000}) {
@@ -41,6 +45,55 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
     }
 
     return result;
+  }
+
+  Future<void> _loadLikeStatus() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final storyId = widget.story['story_uuid'];
+
+    final likeRes =
+        await Supabase.instance.client
+            .from('story_likes')
+            .select()
+            .eq('user_id', user.id)
+            .eq('story_id', storyId)
+            .maybeSingle();
+
+    final countRes = await Supabase.instance.client
+        .from('story_likes')
+        .select('id')
+        .eq('story_id', storyId);
+
+    setState(() {
+      isLiked = likeRes != null;
+      likeCount = countRes.length;
+    });
+  }
+
+  Future<void> _toggleLike() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      if (context.mounted) {
+        Navigator.pushNamed(context, '/login');
+      }
+      return;
+    }
+
+    final storyId = widget.story['story_uuid'];
+
+    if (isLiked) return;
+
+    await Supabase.instance.client.from('story_likes').insert({
+      'user_id': user.id,
+      'story_id': storyId,
+    });
+
+    setState(() {
+      isLiked = true;
+      likeCount += 1;
+    });
   }
 
   void goToPreviousPage() {
@@ -114,7 +167,6 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 12),
                       Align(
                         alignment: Alignment.bottomRight,
@@ -126,6 +178,22 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      if (index == pages.length - 1)
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: _toggleLike,
+                              icon: Icon(
+                                isLiked
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: isLiked ? Colors.red : Colors.grey,
+                              ),
+                            ),
+                            Text('$likeCount beğeni'),
+                          ],
+                        ),
                     ],
                   ),
                 );

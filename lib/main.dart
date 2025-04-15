@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// Removed unused import
 import 'search_page.dart';
 import 'map_screen.dart';
 import 'chat_page.dart';
@@ -160,6 +159,8 @@ class CustomDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -170,6 +171,49 @@ class CustomDrawer extends StatelessWidget {
               "Menü",
               style: TextStyle(color: Colors.white, fontSize: 24),
             ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: Text(user != null ? (user.email ?? 'Profil') : 'Giriş Yap'),
+            onTap: () {
+              if (user == null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                );
+              } else {
+                showDialog(
+                  context: context,
+                  builder:
+                      (context) => AlertDialog(
+                        title: const Text("Çıkış Yap"),
+                        content: Text(
+                          "${user.email} hesabından çıkmak istiyor musun?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("İptal"),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              await Supabase.instance.client.auth.signOut();
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Çıkış yapıldı."),
+                                  ),
+                                );
+                              }
+                            },
+                            child: const Text("Çıkış Yap"),
+                          ),
+                        ],
+                      ),
+                );
+              }
+            },
           ),
           ListTile(
             leading: const Icon(Icons.search),
@@ -188,16 +232,6 @@ class CustomDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ChatPage()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.login),
-            title: const Text("Giriş Yap"),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginPage()),
               );
             },
           ),
