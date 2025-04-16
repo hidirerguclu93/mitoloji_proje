@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'story_detail_page.dart';
@@ -27,7 +28,7 @@ class _StoryListPageState extends State<StoryListPage> {
     try {
       final response = await Supabase.instance.client
           .from('mythology_stories')
-          .select()
+          .select('title, content, image_url, story_uuid, category, type')
           .eq('category', widget.mitoloji)
           .eq('type', widget.type);
 
@@ -51,96 +52,117 @@ class _StoryListPageState extends State<StoryListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
           '${widget.mitoloji} Mitolojisi - ${widget.type == 'character' ? 'Karakterler' : 'Hikâyeler'}',
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
       ),
-
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : stories.isEmpty
-              ? const Center(
-                child: Text(
-                  "Bu mitolojiye ait içerik bulunamadı.",
-                  style: TextStyle(fontSize: 16),
-                ),
-              )
-              : Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: SingleChildScrollView(
-                  child: Wrap(
-                    spacing: 16,
-                    runSpacing: 20,
-                    children:
-                        stories.map((story) {
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => StoryDetailPage(story: story),
+      body: Stack(
+        children: [
+          // Arka plan resmi
+          Positioned.fill(
+            child: Image.asset('assets/story_bg.webp', fit: BoxFit.cover),
+          ),
+          // Blur efekti ve cam görünümü
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(color: Colors.black.withOpacity(0.3)),
+            ),
+          ),
+          // İçerik
+          SafeArea(
+            child:
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : stories.isEmpty
+                    ? const Center(
+                      child: Text(
+                        "Bu mitolojiye ait içerik bulunamadı.",
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                    )
+                    : SingleChildScrollView(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Wrap(
+                        spacing: 16,
+                        runSpacing: 20,
+                        children:
+                            stories.map((story) {
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (_) => StoryDetailPage(story: story),
+                                    ),
+                                  );
+                                },
+                                child: SizedBox(
+                                  width: 140,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        height: 180,
+                                        width: 140,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          image:
+                                              story['image_url'] != null &&
+                                                      story['image_url']
+                                                          .toString()
+                                                          .isNotEmpty
+                                                  ? DecorationImage(
+                                                    image: NetworkImage(
+                                                      story['image_url'],
+                                                    ),
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                  : const DecorationImage(
+                                                    image: AssetImage(
+                                                      'assets/default_cover.jpg',
+                                                    ),
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: Colors.black38,
+                                              blurRadius: 8,
+                                              offset: Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        story['title'] ?? "Başlık Yok",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
-                            },
-                            child: SizedBox(
-                              width: 140,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    height: 180,
-                                    width: 140,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      image:
-                                          story['image_url'] != null &&
-                                                  story['image_url']
-                                                      .toString()
-                                                      .isNotEmpty
-                                              ? DecorationImage(
-                                                image: NetworkImage(
-                                                  story['image_url'],
-                                                ),
-                                                fit: BoxFit.cover,
-                                              )
-                                              : const DecorationImage(
-                                                image: AssetImage(
-                                                  'assets/default_cover.jpg',
-                                                ),
-                                                fit: BoxFit.cover,
-                                              ),
-                                      boxShadow: const [
-                                        BoxShadow(
-                                          color: Colors.black26,
-                                          blurRadius: 6,
-                                          offset: Offset(0, 3),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    story['title'] ?? "Başlık Yok",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                  ),
-                ),
-              ),
+                            }).toList(),
+                      ),
+                    ),
+          ),
+        ],
+      ),
     );
   }
 }

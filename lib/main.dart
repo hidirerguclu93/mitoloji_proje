@@ -5,6 +5,7 @@ import 'map_screen.dart';
 import 'chat_page.dart';
 import 'mythology_selection_page.dart';
 import 'login_page.dart';
+import 'profile_page.dart'; // <-- Profil sayfasını ekledik
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -172,8 +173,19 @@ class CustomDrawer extends StatelessWidget {
               style: TextStyle(color: Colors.white, fontSize: 24),
             ),
           ),
+          if (user != null)
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text("Profilim"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfilePage()),
+                );
+              },
+            ),
           ListTile(
-            leading: const Icon(Icons.person),
+            leading: const Icon(Icons.login),
             title: Text(user != null ? (user.email ?? 'Profil') : 'Giriş Yap'),
             onTap: () {
               if (user == null) {

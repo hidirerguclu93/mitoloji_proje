@@ -16,6 +16,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
   int _currentPage = 0;
   bool isLiked = false;
   int likeCount = 0;
+  bool isFavorited = false;
 
   @override
   void initState() {
@@ -25,6 +26,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
       maxLength: 900,
     );
     _loadLikeStatus();
+    _loadFavoriteStatus();
   }
 
   List<String> splitContentIntoPages(String content, {int maxLength = 1000}) {
@@ -52,24 +54,54 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
     if (user == null) return;
 
     final storyId = widget.story['story_uuid'];
+    if (storyId == null) return;
 
-    final likeRes =
-        await Supabase.instance.client
-            .from('story_likes')
-            .select()
-            .eq('user_id', user.id)
-            .eq('story_id', storyId)
-            .maybeSingle();
+    try {
+      final likeRes =
+          await Supabase.instance.client
+              .from('story_likes')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('story_id', storyId)
+              .limit(1)
+              .maybeSingle();
 
-    final countRes = await Supabase.instance.client
-        .from('story_likes')
-        .select('id')
-        .eq('story_id', storyId);
+      final countRes = await Supabase.instance.client
+          .from('story_likes')
+          .select('id')
+          .eq('story_id', storyId);
 
-    setState(() {
-      isLiked = likeRes != null;
-      likeCount = countRes.length;
-    });
+      setState(() {
+        isLiked = likeRes != null;
+        likeCount = countRes.length;
+      });
+    } catch (e) {
+      print('Like durumunu yüklerken hata: $e');
+    }
+  }
+
+  Future<void> _loadFavoriteStatus() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final storyId = widget.story['story_uuid'];
+    if (storyId == null) return;
+
+    try {
+      final favRes =
+          await Supabase.instance.client
+              .from('story_favorites')
+              .select()
+              .eq('user_id', user.id)
+              .eq('story_id', storyId)
+              .maybeSingle();
+
+      setState(() {
+        isFavorited = favRes != null;
+      });
+    } catch (e) {
+      print('Favori durumu yüklenemedi: $e');
+    }
   }
 
   Future<void> _toggleLike() async {
@@ -82,18 +114,69 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
     }
 
     final storyId = widget.story['story_uuid'];
+    if (storyId == null || isLiked) return;
 
-    if (isLiked) return;
+    try {
+      await Supabase.instance.client.from('story_likes').insert({
+        'user_id': user.id,
+        'story_id': storyId,
+      });
 
-    await Supabase.instance.client.from('story_likes').insert({
-      'user_id': user.id,
-      'story_id': storyId,
-    });
+      setState(() {
+        isLiked = true;
+        likeCount += 1;
+      });
+    } catch (e) {
+      print('Beğeni eklenemedi: $e');
+    }
+  }
 
-    setState(() {
-      isLiked = true;
-      likeCount += 1;
-    });
+  Future<void> _toggleFavorite() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    if (user == null) {
+      if (context.mounted) {
+        Navigator.pushNamed(context, '/login');
+      }
+      return;
+    }
+
+    final storyId = widget.story['story_uuid'];
+    if (storyId == null) return;
+
+    try {
+      if (isFavorited) {
+        await supabase
+            .from('story_favorites')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('story_id', storyId);
+
+        setState(() {
+          isFavorited = false;
+        });
+      } else {
+        await supabase.from('story_favorites').insert({
+          'user_id': user.id,
+          'story_id': storyId,
+        });
+
+        setState(() {
+          isFavorited = true;
+        });
+      }
+    } catch (e) {
+      print('[Favori Güncelleme Hatası] $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Favori işlemi sırasında bir hata oluştu.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   void goToPreviousPage() {
@@ -192,6 +275,15 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
                               ),
                             ),
                             Text('$likeCount beğeni'),
+                            const SizedBox(width: 16),
+                            IconButton(
+                              onPressed: _toggleFavorite,
+                              icon: Icon(
+                                isFavorited ? Icons.star : Icons.star_border,
+                                color: isFavorited ? Colors.amber : Colors.grey,
+                              ),
+                            ),
+                            const Text('Favori'),
                           ],
                         ),
                     ],
