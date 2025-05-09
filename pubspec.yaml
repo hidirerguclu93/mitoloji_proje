@@ -1,6 +1,6 @@
 name: mitoloji_proje
 description: "A new Flutter project."
-publish_to: 'none' # Sadece özel kullanım için
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -12,6 +12,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.8.4
+  google_fonts: ^6.1.0   
 
 dev_dependencies:
   flutter_test:
@@ -29,6 +30,9 @@ flutter:
     - assets/god_banner.webp
     - assets/story_bg.webp
     - assets/bg_texture.webp
+    - assets/anasayfa_arka_plan.webp
+    - assets/login_bg.webp
+    - assets/mozabackg.webp
     - assets/fonts/
     - assets/icons/
 

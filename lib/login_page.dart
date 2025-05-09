@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
@@ -11,9 +11,11 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool isLogin = true;
+  bool _obscurePassword = true;
+  bool _rememberMe = false;
+
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController usernameController = TextEditingController();
 
   Future<void> handleAuth() async {
     final email = emailController.text.trim();
@@ -34,11 +36,9 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
 
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
+      if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Hata: ${e.toString()}')));
@@ -51,118 +51,130 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       body: Stack(
         children: [
+          // Yıldızlı gece arka planı
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/egypttexture.webp'),
+                image: AssetImage('assets/login_bg.webp'),
                 fit: BoxFit.cover,
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.4)),
+          Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  width: 350,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF241537).withOpacity(0.75),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        isLogin ? 'Giriş Yap' : 'Kayıt Ol',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 1,
+                              color: Colors.black54,
+                              offset: Offset(1, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: emailController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: inputDecoration("E-posta"),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: passwordController,
+                        obscureText: _obscurePassword,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: inputDecoration("Şifre").copyWith(
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.white70,
+                            ),
+                            onPressed:
+                                () => setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                }),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      CheckboxListTile(
+                        value: _rememberMe,
+                        onChanged:
+                            (val) => setState(() => _rememberMe = val ?? false),
+                        title: const Text(
+                          "Beni Hatırla",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFA36D3D),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 48,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        onPressed: handleAuth,
+                        child: Text(
+                          isLogin ? 'Giriş Yap' : 'Kayıt Ol',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: () => setState(() => isLogin = !isLogin),
+                        child: Text(
+                          isLogin
+                              ? 'Hesabın yok mu? Kayıt ol'
+                              : 'Zaten hesabın var mı? Giriş yap',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
           Positioned(
             top: 40,
             left: 16,
             child: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-          ),
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(32),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(32),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          isLogin ? 'Giriş Yap' : 'Kayıt Ol',
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        if (!isLogin)
-                          TextField(
-                            controller: usernameController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: inputDecoration('Kullanıcı Adı'),
-                          ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: emailController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: inputDecoration('E-posta'),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: passwordController,
-                          obscureText: true,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: inputDecoration('Şifre'),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepPurple.shade400,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 48,
-                              vertical: 14,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                          onPressed: handleAuth,
-                          child: Text(
-                            isLogin ? 'Giriş Yap' : 'Kayıt Ol',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          children: [
-                            Text(
-                              isLogin
-                                  ? 'Hesabın yok mu? '
-                                  : 'Zaten hesabın var mı? ',
-                              style: const TextStyle(color: Colors.white70),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  isLogin = !isLogin;
-                                });
-                              },
-                              child: Text(
-                                isLogin ? 'Kayıt ol' : 'Giriş yap',
-                                style: const TextStyle(
-                                  color: Colors.amber,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              onPressed: () => Navigator.pop(context),
             ),
           ),
         ],

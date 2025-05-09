@@ -1,35 +1,36 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StoryDetailPage extends StatefulWidget {
   final Map<String, dynamic> story;
 
-  const StoryDetailPage({super.key, required this.story});
+  const StoryDetailPage({Key? key, required this.story}) : super(key: key);
 
   @override
   State<StoryDetailPage> createState() => _StoryDetailPageState();
 }
 
 class _StoryDetailPageState extends State<StoryDetailPage> {
-  late List<String> pages;
+  final supabase = Supabase.instance.client;
   final PageController _pageController = PageController();
+
+  late List<String> pages;
   int _currentPage = 0;
   bool isLiked = false;
-  int likeCount = 0;
   bool isFavorited = false;
+  int likeCount = 0;
 
   @override
   void initState() {
     super.initState();
-    pages = splitContentIntoPages(
-      widget.story['content'] ?? "",
-      maxLength: 900,
-    );
+    pages = _splitContent(widget.story['content'] ?? '');
     _loadLikeStatus();
     _loadFavoriteStatus();
   }
 
-  List<String> splitContentIntoPages(String content, {int maxLength = 1000}) {
+  List<String> _splitContent(String content, {int maxLength = 900}) {
     final words = content.split(' ');
     List<String> result = [];
     String current = '';
@@ -41,57 +42,46 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
       }
       current += '$word ';
     }
-
-    if (current.isNotEmpty) {
-      result.add(current.trim());
-    }
-
+    if (current.isNotEmpty) result.add(current.trim());
     return result;
   }
 
   Future<void> _loadLikeStatus() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
+    final user = supabase.auth.currentUser;
     final storyId = widget.story['story_uuid'];
-    if (storyId == null) return;
+    if (user == null || storyId == null) return;
 
     try {
       final likeRes =
-          await Supabase.instance.client
+          await supabase
               .from('story_likes')
               .select('id')
               .eq('user_id', user.id)
               .eq('story_id', storyId)
-              .limit(1)
               .maybeSingle();
 
-      final countRes = await Supabase.instance.client
+      final countRes = await supabase
           .from('story_likes')
           .select('id')
           .eq('story_id', storyId);
 
       setState(() {
         isLiked = likeRes != null;
-        likeCount = countRes.length;
+        likeCount = (countRes as List).length;
       });
-    } catch (e) {
-      print('Like durumunu yüklerken hata: $e');
-    }
+    } catch (_) {}
   }
 
   Future<void> _loadFavoriteStatus() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
+    final user = supabase.auth.currentUser;
     final storyId = widget.story['story_uuid'];
-    if (storyId == null) return;
+    if (user == null || storyId == null) return;
 
     try {
       final favRes =
-          await Supabase.instance.client
+          await supabase
               .from('story_favorites')
-              .select()
+              .select('id')
               .eq('user_id', user.id)
               .eq('story_id', storyId)
               .maybeSingle();
@@ -99,220 +89,181 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
       setState(() {
         isFavorited = favRes != null;
       });
-    } catch (e) {
-      print('Favori durumu yüklenemedi: $e');
-    }
+    } catch (_) {}
   }
 
   Future<void> _toggleLike() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      if (context.mounted) {
-        Navigator.pushNamed(context, '/login');
-      }
-      return;
-    }
-
+    final user = supabase.auth.currentUser;
     final storyId = widget.story['story_uuid'];
-    if (storyId == null || isLiked) return;
+    if (user == null || storyId == null) return;
+
+    setState(() {
+      isLiked = !isLiked;
+      likeCount += isLiked ? 1 : -1;
+    });
 
     try {
-      await Supabase.instance.client.from('story_likes').insert({
-        'user_id': user.id,
-        'story_id': storyId,
-      });
-
-      setState(() {
-        isLiked = true;
-        likeCount += 1;
-      });
-    } catch (e) {
-      print('Beğeni eklenemedi: $e');
-    }
+      if (isLiked) {
+        await supabase.from('story_likes').insert({
+          'user_id': user.id,
+          'story_id': storyId,
+        });
+      } else {
+        await supabase
+            .from('story_likes')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('story_id', storyId);
+      }
+    } catch (_) {}
   }
 
   Future<void> _toggleFavorite() async {
-    final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
-
-    if (user == null) {
-      if (context.mounted) {
-        Navigator.pushNamed(context, '/login');
-      }
-      return;
-    }
-
     final storyId = widget.story['story_uuid'];
-    if (storyId == null) return;
+    if (user == null || storyId == null) return;
+
+    setState(() {
+      isFavorited = !isFavorited;
+    });
 
     try {
       if (isFavorited) {
+        await supabase.from('story_favorites').insert({
+          'user_id': user.id,
+          'story_id': storyId,
+        });
+      } else {
         await supabase
             .from('story_favorites')
             .delete()
             .eq('user_id', user.id)
             .eq('story_id', storyId);
-
-        setState(() {
-          isFavorited = false;
-        });
-      } else {
-        await supabase.from('story_favorites').insert({
-          'user_id': user.id,
-          'story_id': storyId,
-        });
-
-        setState(() {
-          isFavorited = true;
-        });
       }
-    } catch (e) {
-      print('[Favori Güncelleme Hatası] $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Favori işlemi sırasında bir hata oluştu.'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    }
-  }
-
-  void goToPreviousPage() {
-    if (_currentPage > 0) {
-      _currentPage--;
-      _pageController.animateToPage(
-        _currentPage,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  void goToNextPage() {
-    if (_currentPage < pages.length - 1) {
-      _currentPage++;
-      _pageController.animateToPage(
-        _currentPage,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.story['title'] ?? "Hikaye";
+    final title = widget.story['title'] ?? 'Hikaye';
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(title, overflow: TextOverflow.ellipsis),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: pages.length,
-              onPageChanged: (index) {
-                setState(() => _currentPage = index);
-              },
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (index == 0)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blueAccent,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                        ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Text(
-                            pages[index],
-                            style: const TextStyle(fontSize: 18, height: 1.6),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: Text(
-                          "Sayfa ${index + 1} / ${pages.length}",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (index == pages.length - 1)
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: _toggleLike,
-                              icon: Icon(
-                                isLiked
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                color: isLiked ? Colors.red : Colors.grey,
-                              ),
-                            ),
-                            Text('$likeCount beğeni'),
-                            const SizedBox(width: 16),
-                            IconButton(
-                              onPressed: _toggleFavorite,
-                              icon: Icon(
-                                isFavorited ? Icons.star : Icons.star_border,
-                                color: isFavorited ? Colors.amber : Colors.grey,
-                              ),
-                            ),
-                            const Text('Favori'),
-                          ],
-                        ),
-                    ],
-                  ),
-                );
-              },
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF6A5ACD), Color(0xFF191970)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios),
-                  color: _currentPage > 0 ? Colors.black : Colors.grey,
-                  onPressed: _currentPage > 0 ? goToPreviousPage : null,
+          Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: pages.length,
+                  onPageChanged:
+                      (index) => setState(() => _currentPage = index),
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (index == 0) ...[
+                                  Text(
+                                    title,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    child: Text(
+                                      pages[index],
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        height: 1.6,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: Text(
+                                    'Sayfa ${index + 1} / ${pages.length}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                IconButton(
-                  icon: const Icon(Icons.arrow_forward_ios),
-                  color:
-                      _currentPage < pages.length - 1
-                          ? Colors.black
-                          : Colors.grey,
-                  onPressed:
-                      _currentPage < pages.length - 1 ? goToNextPage : null,
+              ),
+              if (_currentPage == pages.length - 1)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        onPressed: _toggleLike,
+                        icon: Icon(
+                          isLiked ? Icons.favorite : Icons.favorite_border,
+                          color: isLiked ? Colors.redAccent : Colors.white,
+                        ),
+                      ),
+                      Text(
+                        '$likeCount',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      const SizedBox(width: 24),
+                      IconButton(
+                        onPressed: _toggleFavorite,
+                        icon: Icon(
+                          isFavorited ? Icons.star : Icons.star_border,
+                          color:
+                              isFavorited ? Colors.amberAccent : Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+            ],
           ),
         ],
       ),
