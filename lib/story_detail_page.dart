@@ -20,6 +20,18 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
   bool isLiked = false;
   bool isFavorited = false;
   int likeCount = 0;
+  int fontSizeLevel = 1;
+
+  double get currentFontSize {
+    switch (fontSizeLevel) {
+      case 0:
+        return 16.0;
+      case 2:
+        return 24.0;
+      default:
+        return 20.0;
+    }
+  }
 
   @override
   void initState() {
@@ -56,13 +68,13 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
               .from('story_likes')
               .select('id')
               .eq('user_id', user.id)
-              .eq('story_id', storyId)
+              .eq('story_uuid', storyId)
               .maybeSingle();
 
       final countRes = await supabase
           .from('story_likes')
           .select('id')
-          .eq('story_id', storyId);
+          .eq('story_uuid', storyId);
 
       setState(() {
         isLiked = likeRes != null;
@@ -82,7 +94,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
               .from('story_favorites')
               .select('id')
               .eq('user_id', user.id)
-              .eq('story_id', storyId)
+              .eq('story_uuid', storyId)
               .maybeSingle();
 
       setState(() {
@@ -105,14 +117,14 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
       if (isLiked) {
         await supabase.from('story_likes').insert({
           'user_id': user.id,
-          'story_id': storyId,
+          'story_uuid': storyId,
         });
       } else {
         await supabase
             .from('story_likes')
             .delete()
             .eq('user_id', user.id)
-            .eq('story_id', storyId);
+            .eq('story_uuid', storyId);
       }
     } catch (_) {}
   }
@@ -122,6 +134,8 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
     final storyId = widget.story['story_uuid'];
     if (user == null || storyId == null) return;
 
+    final wasFavorited = isFavorited;
+
     setState(() {
       isFavorited = !isFavorited;
     });
@@ -130,14 +144,18 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
       if (isFavorited) {
         await supabase.from('story_favorites').insert({
           'user_id': user.id,
-          'story_id': storyId,
+          'story_uuid': storyId,
         });
       } else {
         await supabase
             .from('story_favorites')
             .delete()
             .eq('user_id', user.id)
-            .eq('story_id', storyId);
+            .eq('story_uuid', storyId);
+
+        if (wasFavorited && mounted) {
+          Navigator.pop(context, true);
+        }
       }
     } catch (_) {}
   }
@@ -149,10 +167,27 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(title, overflow: TextOverflow.ellipsis),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context, isFavorited ? false : true);
+          },
+        ),
+        actions: [
+          PopupMenuButton<int>(
+            onSelected: (value) => setState(() => fontSizeLevel = value),
+            icon: const Icon(Icons.text_fields, color: Colors.white),
+            itemBuilder:
+                (_) => const [
+                  PopupMenuItem(value: 0, child: Text('Küçük')),
+                  PopupMenuItem(value: 1, child: Text('Normal')),
+                  PopupMenuItem(value: 2, child: Text('Büyük')),
+                ],
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -165,160 +200,167 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
               ),
             ),
           ),
-          Column(
-            children: [
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: pages.length,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged:
-                      (index) => setState(() => _currentPage = index),
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1A1325).withOpacity(0.9),
+          Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 80),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: pages.length,
+                        physics: const NeverScrollableScrollPhysics(),
+                        onPageChanged:
+                            (index) => setState(() => _currentPage = index),
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: const Color(0xFFA36D3D).withOpacity(0.4),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF1A1325,
+                                    ).withOpacity(0.95),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFFA36D3D,
+                                      ).withOpacity(0.4),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (index == 0) ...[
+                                        Center(
+                                          child: Text(
+                                            title,
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFFFFD700),
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                      ],
+                                      Expanded(
+                                        child: SingleChildScrollView(
+                                          child: Text(
+                                            pages[index],
+                                            style: TextStyle(
+                                              fontSize: currentFontSize,
+                                              height: 1.6,
+                                              color: const Color(0xFFE0E0E0),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          if (_currentPage > 0)
+                                            IconButton(
+                                              onPressed: () {
+                                                _pageController.previousPage(
+                                                  duration: const Duration(
+                                                    milliseconds: 300,
+                                                  ),
+                                                  curve: Curves.easeInOut,
+                                                );
+                                              },
+                                              icon: const Icon(
+                                                Icons.arrow_back_ios,
+                                              ),
+                                              color: Colors.white,
+                                            ),
+                                          Text(
+                                            'Sayfa ${index + 1} / ${pages.length}',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade400,
+                                            ),
+                                          ),
+                                          if (_currentPage < pages.length - 1)
+                                            IconButton(
+                                              onPressed: () {
+                                                _pageController.nextPage(
+                                                  duration: const Duration(
+                                                    milliseconds: 300,
+                                                  ),
+                                                  curve: Curves.easeInOut,
+                                                );
+                                              },
+                                              icon: const Icon(
+                                                Icons.arrow_forward_ios,
+                                              ),
+                                              color: Colors.white,
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (index == 0) ...[
-                                  Text(
-                                    title,
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFFFFD700),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                ],
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    child: Text(
-                                      pages[index],
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        height: 1.6,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: Text(
-                                    'Sayfa ${index + 1} / ${pages.length}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              if (_currentPage == pages.length - 1)
-                Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          onPressed: _toggleLike,
-                          icon: Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            color:
-                                isLiked
-                                    ? const Color(0xFFFF4D4D)
-                                    : Colors.white,
-                          ),
-                        ),
-                        Text(
-                          '$likeCount',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        const SizedBox(width: 24),
-                        IconButton(
-                          onPressed: _toggleFavorite,
-                          icon: Icon(
-                            isFavorited ? Icons.star : Icons.star_border,
-                            color:
-                                isFavorited
-                                    ? const Color(0xFFFFD700)
-                                    : Colors.white,
-                          ),
-                        ),
-                      ],
                     ),
                     const SizedBox(height: 12),
-                    _buildPageNavButtons(),
+                    if (_currentPage == pages.length - 1)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            onPressed: _toggleLike,
+                            icon: Icon(
+                              isLiked ? Icons.favorite : Icons.favorite_border,
+                              color:
+                                  isLiked
+                                      ? const Color(0xFFFF4D4D)
+                                      : Colors.white,
+                            ),
+                          ),
+                          Text(
+                            '$likeCount',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          const SizedBox(width: 24),
+                          IconButton(
+                            onPressed: _toggleFavorite,
+                            icon: Icon(
+                              isFavorited ? Icons.star : Icons.star_border,
+                              color:
+                                  isFavorited
+                                      ? const Color(0xFFFFD700)
+                                      : Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 12),
                   ],
-                )
-              else
-                _buildPageNavButtons(),
-              const SizedBox(height: 12),
-            ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPageNavButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        if (_currentPage > 0)
-          ElevatedButton.icon(
-            onPressed: () {
-              _pageController.previousPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            icon: const Icon(Icons.arrow_back),
-            label: const Text("Geri"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF241537),
-              foregroundColor: Colors.white,
-            ),
-          ),
-        if (_currentPage < pages.length - 1)
-          ElevatedButton.icon(
-            onPressed: () {
-              _pageController.nextPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            icon: const Icon(Icons.arrow_forward),
-            label: const Text("İleri"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF241537),
-              foregroundColor: Colors.white,
-            ),
-          ),
-      ],
     );
   }
 }

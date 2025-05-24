@@ -43,11 +43,11 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final favResponse = await supabase
           .from('story_favorites')
-          .select('story_id')
+          .select('story_uuid')
           .eq('user_id', user!.id);
 
       final favList =
-          (favResponse as List).map((e) => e['story_id'] as String).toList();
+          (favResponse as List).map((e) => e['story_uuid'] as String).toList();
 
       if (favList.isEmpty) {
         setState(() {
@@ -177,30 +177,97 @@ class _ProfilePageState extends State<ProfilePage> {
                       itemCount: favorites.length,
                       itemBuilder: (context, index) {
                         final story = favorites[index];
-                        return GestureDetector(
-                          onTap:
-                              () => Navigator.push(
+                        return Card(
+                          color: const Color(0xFF1A1325),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: ListTile(
+                            title: Text(
+                              story['title'] ?? 'Başlık Yok',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.redAccent,
+                              ),
+                              onPressed: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder:
+                                      (context) => AlertDialog(
+                                        title: const Text(
+                                          "Favorilerden kaldırılsın mı?",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed:
+                                                () => Navigator.pop(
+                                                  context,
+                                                  false,
+                                                ),
+                                            child: const Text("Hayır"),
+                                          ),
+                                          TextButton(
+                                            onPressed:
+                                                () => Navigator.pop(
+                                                  context,
+                                                  true,
+                                                ),
+                                            child: const Text("Evet"),
+                                          ),
+                                        ],
+                                      ),
+                                );
+
+                                if (confirm == true) {
+                                  final storyId = story['story_uuid'];
+                                  final userId = user?.id;
+                                  if (storyId != null && userId != null) {
+                                    await supabase
+                                        .from('story_favorites')
+                                        .delete()
+                                        .eq('user_id', userId)
+                                        .eq('story_uuid', storyId);
+
+                                    await Future.wait([
+                                      _fetchFavorites(),
+                                      _fetchStats(),
+                                    ]);
+                                    setState(() {});
+
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "Favorilerden kaldırıldı.",
+                                          ),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                }
+                              },
+                            ),
+                            onTap: () async {
+                              final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => StoryDetailPage(story: story),
                                 ),
-                              ),
-                          child: Card(
-                            color: const Color(0xFF1A1325),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: ListTile(
-                              title: Text(
-                                story['title'] ?? 'Başlık Yok',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              trailing: const Icon(
-                                Icons.arrow_forward_ios,
-                                color: Colors.white60,
-                                size: 18,
-                              ),
-                            ),
+                              );
+                              if (result == true) {
+                                await Future.wait([
+                                  _fetchFavorites(),
+                                  _fetchStats(),
+                                ]);
+                                setState(() {});
+                              }
+                            },
                           ),
                         );
                       },

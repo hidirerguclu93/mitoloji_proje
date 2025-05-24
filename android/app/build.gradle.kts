@@ -6,6 +6,7 @@ plugins {
 }
 
 android {
+    ndkVersion = "27.0.12077973"
     namespace = "com.hdr.mitoloji_proje"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion

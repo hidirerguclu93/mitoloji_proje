@@ -2,12 +2,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'search_page.dart';
-import 'chat_page.dart';
 import 'mythology_selection_page.dart';
 import 'profile_page.dart';
 import 'login_page.dart';
 import 'admin_panel_page.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +29,6 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF0d090a),
       ),
       home: const HomeScreen(),
-
     );
   }
 }
@@ -45,6 +42,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int selectedIndex = 0;
+  bool _isDrawerOpen = false;
 
   final List<IconData> icons = [Icons.home, Icons.auto_stories];
   final List<String> labels = ["Ana Sayfa", "Hikayeler"];
@@ -67,8 +65,15 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        leading:
+            _isDrawerOpen
+                ? null
+                : IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => setState(() => _isDrawerOpen = true),
+                ),
       ),
-      drawer: const CustomDrawer(),
+
       body: Stack(
         children: [
           Container(
@@ -125,148 +130,128 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          if (_isDrawerOpen)
+            buildGlassDrawer(
+              context,
+              () => setState(() => _isDrawerOpen = false),
+            ),
         ],
       ),
     );
   }
 }
 
-class CustomDrawer extends StatelessWidget {
-  const CustomDrawer({super.key});
+Widget buildGlassDrawer(BuildContext context, VoidCallback closeDrawer) {
+  final user = Supabase.instance.client.auth.currentUser;
+  const adminEmails = {"hidircanerguclu@gmail.com"};
+  final isAdmin = adminEmails.contains(user?.email);
 
-  @override
-  Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser;
-    const adminEmails = {"hidircanerguclu@gmail.com"};
-    final isAdmin = adminEmails.contains(user?.email);
-
-    return Drawer(
-      child: Stack(
-        children: [
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: const Color(0xFF241537).withOpacity(0.6)),
-          ),
-          ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              const DrawerHeader(
-                child: Center(
-                  child: Text(
-                    "Mitoloji Menü",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 2,
-                          color: Colors.black45,
-                          offset: Offset(1, 1),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+  return GestureDetector(
+    onTap: closeDrawer,
+    child: Stack(
+      children: [
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(color: Colors.black.withOpacity(0.2)),
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.75,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(20),
+                bottomRight: Radius.circular(20),
               ),
-              ListTile(
-                leading: const Icon(Icons.search, color: Colors.white),
-                title: const Text(
-                  "Arama",
-                  style: TextStyle(color: Colors.white),
-                ),
-                onTap:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SearchPage()),
-                    ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.person, color: Colors.white),
-                title: const Text(
-                  "Profilim",
-                  style: TextStyle(color: Colors.white),
-                ),
-                onTap: () {
-                  if (user != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ProfilePage()),
-                    );
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                    );
-                  }
-                },
-              ),
-              if (isAdmin)
-                ListTile(
-                  leading: const Icon(
-                    Icons.admin_panel_settings,
+            ),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 20),
+              children: [
+                const Text(
+                  "Mitoloji Menü",
+                  style: TextStyle(
                     color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
                   ),
-                  title: const Text(
+                ),
+                const SizedBox(height: 20),
+                _drawerItem(
+                  context,
+                  Icons.search,
+                  "Arama",
+                  const SearchPage(),
+                  closeDrawer,
+                ),
+                _drawerItem(
+                  context,
+                  Icons.person,
+                  "Profilim",
+                  user != null ? const ProfilePage() : const LoginPage(),
+                  closeDrawer,
+                ),
+                if (isAdmin)
+                  _drawerItem(
+                    context,
+                    Icons.admin_panel_settings,
                     "Admin Paneli",
-                    style: TextStyle(color: Colors.white),
+                    const AdminPanelPage(),
+                    closeDrawer,
                   ),
-                  onTap:
-                      () => Navigator.push(
+                ListTile(
+                  leading: const Icon(Icons.login, color: Colors.white),
+                  title: Text(
+                    user != null ? "Çıkış Yap" : "Giriş Yap",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  onTap: () async {
+                    closeDrawer();
+                    if (user != null) {
+                      await Supabase.instance.client.auth.signOut();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HomeScreen()),
+                          (route) => false,
+                        );
+                      }
+                    } else {
+                      Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const AdminPanelPage(),
-                        ),
-                      ),
-                ),
-              ListTile(
-                leading: const Icon(Icons.login, color: Colors.white),
-                title: Text(
-                  user != null ? "Çıkış Yap" : "Giriş Yap",
-                  style: const TextStyle(color: Colors.white),
-                ),
-                onTap: () async {
-                  if (user != null) {
-                    await Supabase.instance.client.auth.signOut();
-                    if (context.mounted) {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const HomeScreen()),
-                        (route) => false,
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
                       );
                     }
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                    );
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.chat_bubble, color: Colors.white),
-                title: const Text(
-                  "Sohbet",
-                  style: TextStyle(color: Colors.white),
+                  },
                 ),
-                onTap:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ChatPage()),
-                    ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.settings, color: Colors.white),
-                title: const Text(
-                  "Ayarlar",
-                  style: TextStyle(color: Colors.white),
+
+                const ListTile(
+                  leading: Icon(Icons.settings, color: Colors.white),
+                  title: Text("Ayarlar", style: TextStyle(color: Colors.white)),
                 ),
-                onTap: () {},
-              ),
-            ],
+              ],
+            ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _drawerItem(
+  BuildContext context,
+  IconData icon,
+  String title,
+  Widget page,
+  VoidCallback closeDrawer,
+) {
+  return ListTile(
+    leading: Icon(icon, color: Colors.white),
+    title: Text(title, style: const TextStyle(color: Colors.white)),
+    onTap: () {
+      closeDrawer();
+      Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+    },
+  );
 }

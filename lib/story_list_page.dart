@@ -74,98 +74,111 @@ class _StoryListPageState extends State<StoryListPage> {
             ),
           ),
           SafeArea(
-            child:
-                _isLoading
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  )
+                : stories.isEmpty
                     ? const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    )
-                    : stories.isEmpty
-                    ? const Center(
-                      child: Text(
-                        "Bu mitolojiye ait içerik bulunamadı.",
-                        style: TextStyle(fontSize: 16, color: Colors.white70),
-                      ),
-                    )
+                        child: Text(
+                          "Bu mitolojiye ait içerik bulunamadı.",
+                          style:
+                              TextStyle(fontSize: 16, color: Colors.white70),
+                        ),
+                      )
                     : Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.75,
-                            ),
-                        itemCount: stories.length,
-                        itemBuilder: (context, index) {
-                          final story = stories[index];
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => StoryDetailPage(story: story),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: Colors.white.withOpacity(0.05),
-                                border: Border.all(color: Colors.white24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.65,
+                          ),
+                          itemCount: stories.length,
+                          itemBuilder: (context, index) {
+                            final story = stories[index];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => StoryDetailPage(story: story),
                                   ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(16),
-                                      topRight: Radius.circular(16),
+                                );
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.3),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 4),
                                     ),
-                                    child: Image.network(
-                                      story['image_url'] ?? '',
-                                      height: 140,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (_, __, ___) => Container(
-                                            height: 140,
-                                            color: Colors.grey.shade300,
-                                            child: const Icon(
-                                              Icons.broken_image,
+                                  ],
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Stack(
+                                    children: [
+                                      Image.network(
+                                        story['image_url'] ?? '',
+                                        height: double.infinity,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                        alignment: Alignment.center,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: Colors.grey.shade900,
+                                          child: const Icon(
+                                            Icons.broken_image,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.bottomCenter,
+                                              end: Alignment.topCenter,
+                                              colors: [
+                                                Colors.black.withOpacity(0.7),
+                                                Colors.transparent,
+                                              ],
                                             ),
                                           ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(
-                                      story['title'] ?? 'Başlık Yok',
-                                      style: const TextStyle(
-                                        color: Colors.amberAccent,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
+                                          child: Text(
+                                            story['title'] ?? 'Başlık Yok',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Colors.amberAccent,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
           ),
         ],
       ),
