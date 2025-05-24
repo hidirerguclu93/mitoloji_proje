@@ -1,5 +1,4 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -172,6 +171,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
                 child: PageView.builder(
                   controller: _pageController,
                   itemCount: pages.length,
+                  physics: const NeverScrollableScrollPhysics(),
                   onPageChanged:
                       (index) => setState(() => _currentPage = index),
                   itemBuilder: (context, index) {
@@ -184,9 +184,11 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
                           child: Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
+                              color: const Color(0xFF1A1325).withOpacity(0.9),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white24),
+                              border: Border.all(
+                                color: const Color(0xFFA36D3D).withOpacity(0.4),
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,7 +199,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
                                     style: const TextStyle(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                      color: Color(0xFFFFD700),
                                     ),
                                   ),
                                   const SizedBox(height: 16),
@@ -219,9 +221,9 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
                                   alignment: Alignment.bottomRight,
                                   child: Text(
                                     'Sayfa ${index + 1} / ${pages.length}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.white70,
+                                      color: Colors.grey.shade400,
                                     ),
                                   ),
                                 ),
@@ -234,39 +236,89 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
                   },
                 ),
               ),
+              const SizedBox(height: 12),
               if (_currentPage == pages.length - 1)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        onPressed: _toggleLike,
-                        icon: Icon(
-                          isLiked ? Icons.favorite : Icons.favorite_border,
-                          color: isLiked ? Colors.redAccent : Colors.white,
+                Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          onPressed: _toggleLike,
+                          icon: Icon(
+                            isLiked ? Icons.favorite : Icons.favorite_border,
+                            color:
+                                isLiked
+                                    ? const Color(0xFFFF4D4D)
+                                    : Colors.white,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '$likeCount',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      const SizedBox(width: 24),
-                      IconButton(
-                        onPressed: _toggleFavorite,
-                        icon: Icon(
-                          isFavorited ? Icons.star : Icons.star_border,
-                          color:
-                              isFavorited ? Colors.amberAccent : Colors.white,
+                        Text(
+                          '$likeCount',
+                          style: const TextStyle(color: Colors.white),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                        const SizedBox(width: 24),
+                        IconButton(
+                          onPressed: _toggleFavorite,
+                          icon: Icon(
+                            isFavorited ? Icons.star : Icons.star_border,
+                            color:
+                                isFavorited
+                                    ? const Color(0xFFFFD700)
+                                    : Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPageNavButtons(),
+                  ],
+                )
+              else
+                _buildPageNavButtons(),
+              const SizedBox(height: 12),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPageNavButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        if (_currentPage > 0)
+          ElevatedButton.icon(
+            onPressed: () {
+              _pageController.previousPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            icon: const Icon(Icons.arrow_back),
+            label: const Text("Geri"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF241537),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        if (_currentPage < pages.length - 1)
+          ElevatedButton.icon(
+            onPressed: () {
+              _pageController.nextPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            icon: const Icon(Icons.arrow_forward),
+            label: const Text("İleri"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF241537),
+              foregroundColor: Colors.white,
+            ),
+          ),
+      ],
     );
   }
 }

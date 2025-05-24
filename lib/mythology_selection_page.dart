@@ -11,7 +11,7 @@ class MythologySelectionPage extends StatelessWidget {
     {"name": "İskandinav", "image": "assets/icons/odin.png"},
     {"name": "Türk", "image": "assets/icons/wolf.png"},
     {"name": "Japon", "image": "assets/icons/amaterasu.png"},
-    {"name": "Hint", "image": "assets/icons/ganesha.png"},
+    {"name": "Hindu", "image": "assets/icons/ganesha.png"},
     {"name": "Çin", "image": "assets/icons/chinese.png"},
     {"name": "Aztek", "image": "assets/icons/aztek.png"},
     {"name": "Yerli", "image": "assets/icons/eagle.png"},

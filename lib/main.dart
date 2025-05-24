@@ -8,6 +8,7 @@ import 'profile_page.dart';
 import 'login_page.dart';
 import 'admin_panel_page.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
@@ -30,6 +31,7 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF0d090a),
       ),
       home: const HomeScreen(),
+
     );
   }
 }

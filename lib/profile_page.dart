@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'login_page.dart';
 import 'story_detail_page.dart';
-import 'login_page.dart'; // LoginPage yönlendirmesi için eklendi
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  const ProfilePage({super.key});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -12,9 +12,11 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final supabase = Supabase.instance.client;
+  User? user;
   List<Map<String, dynamic>> favorites = [];
   bool isLoading = true;
-  User? user;
+  int likeCount = 0;
+  int favoriteCount = 0;
 
   @override
   void initState() {
@@ -24,7 +26,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _checkSessionAndFetch() async {
     final session = supabase.auth.currentSession;
-
     if (session == null || session.user == null) {
       if (mounted) {
         Navigator.pushReplacement(
@@ -34,9 +35,8 @@ class _ProfilePageState extends State<ProfilePage> {
       }
       return;
     }
-
     setState(() => user = session.user);
-    _fetchFavorites();
+    await Future.wait([_fetchFavorites(), _fetchStats()]);
   }
 
   Future<void> _fetchFavorites() async {
@@ -67,7 +67,6 @@ class _ProfilePageState extends State<ProfilePage> {
           );
 
       final storyList = List<Map<String, dynamic>>.from(storyResponse as List);
-
       setState(() {
         favorites = storyList;
         isLoading = false;
@@ -82,156 +81,149 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _fetchStats() async {
+    try {
+      final likes = await supabase
+          .from('story_likes')
+          .select('id')
+          .eq('user_id', user!.id);
+      final favorites = await supabase
+          .from('story_favorites')
+          .select('id')
+          .eq('user_id', user!.id);
+
+      setState(() {
+        likeCount = (likes as List).length;
+        favoriteCount = (favorites as List).length;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("İstatistikler alınamadı: $e")));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final username =
-        (user?.userMetadata?['username'] as String?) ??
-        user?.email ??
-        'Misafir Kullanıcı';
+    final email = user?.email ?? 'Misafir Kullanıcı';
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFF0D090A),
       appBar: AppBar(
         title: const Text('Profilim'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.white,
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF6A5ACD), Color(0xFF191970)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 24),
-              Text(
-                username,
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+      body: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6A5ACD), Color(0xFF191970)],
               ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      topRight: Radius.circular(32),
-                    ),
-                  ),
-                  child:
-                      isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : favorites.isEmpty
-                          ? const Center(
-                            child: Text(
-                              'Henüz favori eklemediniz.',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.black54,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                const CircleAvatar(
+                  radius: 32,
+                  backgroundColor: Colors.white24,
+                  child: Icon(Icons.person, color: Colors.white, size: 32),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  email,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildStatCard(Icons.favorite, likeCount),
+                    const SizedBox(width: 24),
+                    _buildStatCard(Icons.star, favoriteCount),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child:
+                isLoading
+                    ? const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    )
+                    : favorites.isEmpty
+                    ? const Center(
+                      child: Text(
+                        'Henüz favori eklemediniz.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    )
+                    : ListView.builder(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: favorites.length,
+                      itemBuilder: (context, index) {
+                        final story = favorites[index];
+                        return GestureDetector(
+                          onTap:
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => StoryDetailPage(story: story),
+                                ),
+                              ),
+                          child: Card(
+                            color: const Color(0xFF1A1325),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: ListTile(
+                              title: Text(
+                                story['title'] ?? 'Başlık Yok',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              trailing: const Icon(
+                                Icons.arrow_forward_ios,
+                                color: Colors.white60,
+                                size: 18,
                               ),
                             ),
-                          )
-                          : Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: GridView.builder(
-                              itemCount: favorites.length,
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    crossAxisSpacing: 16,
-                                    mainAxisSpacing: 16,
-                                    childAspectRatio: 0.7,
-                                  ),
-                              itemBuilder: (context, index) {
-                                final story = favorites[index];
-                                return GestureDetector(
-                                  onTap: () async {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) =>
-                                                StoryDetailPage(story: story),
-                                      ),
-                                    );
-                                    _fetchFavorites();
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      color: Colors.white.withOpacity(0.1),
-                                      border: Border.all(color: Colors.white24),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          story['image_url'] != null
-                                              ? Image.network(
-                                                story['image_url'],
-                                                fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (_, __, ___) => Container(
-                                                      color:
-                                                          Colors.grey.shade200,
-                                                      alignment:
-                                                          Alignment.center,
-                                                      child: const Icon(
-                                                        Icons.broken_image,
-                                                        color: Colors.grey,
-                                                      ),
-                                                    ),
-                                              )
-                                              : Container(
-                                                color: Colors.grey.shade300,
-                                              ),
-                                          Container(
-                                            color: Colors.black.withOpacity(
-                                              0.4,
-                                            ),
-                                            alignment: Alignment.bottomCenter,
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(
-                                                8.0,
-                                              ),
-                                              child: Text(
-                                                story['title'] ?? 'Başlık Yok',
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                  color: Colors.white,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
                           ),
-                ),
-              ),
-            ],
+                        );
+                      },
+                    ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(IconData icon, int count) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.amberAccent),
+        const SizedBox(height: 4),
+        Text(
+          '$count',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
         ),
-      ),
+      ],
     );
   }
 }
