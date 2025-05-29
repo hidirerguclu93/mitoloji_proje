@@ -37,6 +37,16 @@ Aetherium, mitolojik bilgileri ve karakterleri bir araya getiren, kullanıcılar
      anonKey: 'your-anon-key',
    );
    ```
+   4,5. Bana ait supabase bağlantısı.
+
+   ```
+    await Supabase.initialize(
+    url: 'https://hwsfigyagjtorzvbdqrp.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3c2ZpZ3lhZ2p0b3J6dmJkcXJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMDc5NTUsImV4cCI6MjA1Nzg4Mzk1NX0.mJhO-InFZddtsX_iGV1vIv4fYHBkRs9easkwrc4c5K4',
+   );
+  
+   ```
 
 5. Projeyi çalıştırmak için:
 
